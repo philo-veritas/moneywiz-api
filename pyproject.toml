@@ -18,7 +18,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "pandas"
+    "click>=8.3.1",
+    "pandas",
 ]
 
 [project.optional-dependencies]

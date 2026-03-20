@@ -1,34 +1,30 @@
 
-VENV?=${VIRTUAL_ENV}
-
-${VENV}/bin/activate:
-	python3.10 -m venv ${VENV}
-
-venv: ${VENV}/bin/activate
-
-install: requirements.txt requirements-dev.txt venv
-	${VENV}/bin/pip3 install -e .
+install:
+	uv sync
 
 test:
-	${VENV}/bin/python -m pytest tests
+	uv run pytest tests
 
-pylint:
-	${VENV}/bin/python -m pylint --rcfile .pylintrc src
+test-unit:
+	uv run pytest tests/unit -v
 
-mypy:
-	${VENV}/bin/python -m mypy src
+lint:
+	uv run ruff check src/
 
 format:
-	${VENV}/bin/python -m black -l 88 src tests
+	uv run ruff format src/ tests/
+
+mypy:
+	uv run mypy src
 
 shell:
-	${VENV}/bin/python src/moneywiz_api/cli/cli.py
+	uv run moneywiz-cli
 
 package:
-	${VENV}/bin/python -m build
+	uv run python -m build
 
 test-publish:
-	${VENV}/bin/python -m twine upload --repository testpypi dist/*
+	uv run python -m twine upload --repository testpypi dist/*
 
 publish:
-	${VENV}/bin/python -m twine upload --repository pypi dist/*
+	uv run python -m twine upload --repository pypi dist/*

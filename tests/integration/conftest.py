@@ -1,15 +1,25 @@
 from pathlib import Path
 
-from moneywiz_api import MoneywizApi
+import pytest
 
 from tests.integration.test_config import (
     TEST_DB_PATH,
-    # CASH_BALANCES,
-    # HOLDINGS_BALANCES,
-    # BALANCE_AS_OF_DATE,
+    CASH_BALANCES,
+    HOLDINGS_BALANCES,
+    BALANCE_AS_OF_DATE,
 )
 
-moneywizApi = MoneywizApi(Path(TEST_DB_PATH))
+_db_path = Path(TEST_DB_PATH)
+
+if not _db_path.exists():
+    pytest.skip(
+        f"MoneyWiz DB not found: {_db_path}",
+        allow_module_level=True,
+    )
+
+from moneywiz_api import MoneywizApi  # noqa: E402
+
+moneywizApi = MoneywizApi(_db_path)
 
 accessor = moneywizApi.accessor
 account_manager = moneywizApi.account_manager

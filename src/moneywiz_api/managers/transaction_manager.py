@@ -109,6 +109,19 @@ class TransactionManager(RecordManager[Transaction]):
     ) -> List[Transaction]:
         return self._filter(list(self.records().values()), since=since, until=until)
 
+    def get_uncategorized(
+        self,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+    ) -> List[Transaction]:
+        all_records = self.records()
+        txns = [
+            t
+            for tid, t in all_records.items()
+            if tid not in self.category_assignment
+        ]
+        return self._filter(txns, since=since, until=until)
+
     def get_by_category(
         self,
         category_ids: ID | List[ID],

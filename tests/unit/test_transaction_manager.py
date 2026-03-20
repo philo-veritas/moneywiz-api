@@ -79,3 +79,13 @@ def test_filter_sorted_by_datetime():
     tm = _build_manager(t1, t2, t3)
     result = tm._filter([t1, t2, t3])
     assert [t.id for t in result] == [2, 3, 1]
+
+
+def test_get_uncategorized():
+    t1 = _make_txn(1, datetime(2024, 1, 1))
+    t2 = _make_txn(2, datetime(2024, 2, 1))
+    t3 = _make_txn(3, datetime(2024, 3, 1))
+    tm = _build_manager(t1, t2, t3)
+    tm.category_assignment = {1: [(10, Decimal("100"))]}
+    result = tm.get_uncategorized()
+    assert [t.id for t in result] == [2, 3]

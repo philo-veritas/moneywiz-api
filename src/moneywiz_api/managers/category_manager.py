@@ -1,4 +1,4 @@
-from typing import Dict, Callable, List
+from typing import Dict, Callable, List, Set
 
 from moneywiz_api.model.category import Category
 from moneywiz_api.managers.record_manager import RecordManager
@@ -35,3 +35,37 @@ class CategoryManager(RecordManager[Category]):
             [x for _, x in self.records().items() if x.user == user_id],
             key=lambda x: x.type,
         )
+
+    def get_by_name(self, name: str, user_id: ID | None = None) -> List[Category]:
+        results = []
+        for cat in self.records().values():
+            if cat.name == name:
+                if user_id is None or cat.user == user_id:
+                    results.append(cat)
+        return results
+
+    def search_by_name(self, keyword: str, user_id: ID | None = None) -> List[Category]:
+        keyword_lower = keyword.lower()
+        results = []
+        for cat in self.records().values():
+            if keyword_lower in cat.name.lower():
+                if user_id is None or cat.user == user_id:
+                    results.append(cat)
+        return results
+
+    def get_children(self, category_id: ID) -> List[Category]:
+        return [
+            cat for cat in self.records().values()
+            if cat.parent_id == category_id
+        ]
+
+    def get_subtree_ids(self, category_id: ID) -> Set[ID]:
+        result: Set[ID] = {category_id}
+        queue = [category_id]
+        while queue:
+            current = queue.pop()
+            for child in self.get_children(current):
+                if child.id not in result:
+                    result.add(child.id)
+                    queue.append(child.id)
+        return result

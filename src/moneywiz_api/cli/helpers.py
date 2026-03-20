@@ -1,4 +1,5 @@
-from typing import Dict
+from datetime import datetime
+from typing import Dict, Optional
 from pathlib import Path
 
 import logging
@@ -81,6 +82,29 @@ class ShellHelper:
     def transactions_table(self, account_id: ID) -> pd.DataFrame:
         records = self._mw_api.transaction_manager.get_all_for_account(account_id)
 
+        return pd.DataFrame.from_records(
+            [record.as_dict() for record in records]
+        ).sort_values(by=["datetime"], ascending=False)
+
+    def transactions_by_category_table(
+        self,
+        category_id: ID,
+        include_subcategories: bool = True,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+    ) -> pd.DataFrame:
+        if include_subcategories:
+            cat_ids = list(
+                self._mw_api.category_manager.get_subtree_ids(category_id)
+            )
+        else:
+            cat_ids = [category_id]
+
+        records = self._mw_api.transaction_manager.get_by_category(
+            cat_ids, since=since, until=until
+        )
+        if not records:
+            return pd.DataFrame()
         return pd.DataFrame.from_records(
             [record.as_dict() for record in records]
         ).sort_values(by=["datetime"], ascending=False)

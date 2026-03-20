@@ -26,6 +26,13 @@ class MoneywizApi:
 
         self.load()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.accessor.close()
+        return False
+
     def load(self):
         self.account_manager.load(self.accessor)
         self.payee_manager.load(self.accessor)

@@ -114,16 +114,26 @@ class DatabaseAccessor:
 
     def get_tags_map(self) -> Dict[ID, List[ID]]:
         transactions_to_tags: Dict[ID, List[ID]] = defaultdict(list)
+        tag_ent = self.ent_for("Tag")
+        txn_ent = self.ent_for("Transaction")
+        table = f"Z_{txn_ent}TAGS"
+        col_txn = f"Z_{txn_ent}TRANSACTIONS"
+        col_tag = f"Z_{tag_ent}TAGS"
         cur = self._con.cursor()
-        res = cur.execute(
-            """
-        SELECT Z_36TRANSACTIONS, Z_35TAGS FROM  Z_36TAGS
-        
-        """
-        )
+        res = cur.execute(f"SELECT {col_txn}, {col_tag} FROM {table}")
         for row in res.fetchall():
-            transactions_to_tags[row["Z_36TRANSACTIONS"]].append(row["Z_35TAGS"])
+            transactions_to_tags[row[col_txn]].append(row[col_tag])
         return transactions_to_tags
+
+    def close(self) -> None:
+        self._con.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     def get_users(self) -> Dict[ID, str]:
         users_map: Dict[ID, str] = {}

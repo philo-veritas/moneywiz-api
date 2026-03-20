@@ -35,10 +35,10 @@ class RawDataHandler:
     @staticmethod
     def filter_row(row: Dict[str, Any]) -> Dict[str, Any]:
         copy = {k: v for k, v in row.items()}
-        del copy["ZMANUALHISTORICALPRICESPERSHARE"]
-        del copy["ZIMPORTLINKIDARRAY2"]
-        del copy["ZIMPORTLINKIDARRAY"]
-        del copy["ZBANKLOGOPRIMARYCOLOR"]
+        copy.pop("ZMANUALHISTORICALPRICESPERSHARE", None)
+        copy.pop("ZIMPORTLINKIDARRAY2", None)
+        copy.pop("ZIMPORTLINKIDARRAY", None)
+        copy.pop("ZBANKLOGOPRIMARYCOLOR", None)
         return {
             k: v
             for k, v in copy.items()

@@ -1,6 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import Optional
 
 from moneywiz_api.types import ID
 from moneywiz_api.model.raw_data_handler import RawDataHandler as RDH
@@ -14,7 +15,7 @@ class Account(Record, ABC):
     """
 
     display_order: int = field(repr=False)
-    group_id: int = field(repr=False)
+    group_id: Optional[int] = field(repr=False)
 
     name: str
     currency: str
@@ -38,7 +39,6 @@ class Account(Record, ABC):
 
         # Validate
         assert self.display_order is not None, self.as_dict()
-        assert self.group_id is not None, self.as_dict()
         assert self.name is not None, self.as_dict()
         assert self.currency is not None, self.as_dict()
         assert self.opening_balance is not None, self.as_dict()

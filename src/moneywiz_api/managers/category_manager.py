@@ -54,10 +54,7 @@ class CategoryManager(RecordManager[Category]):
         return results
 
     def get_children(self, category_id: ID) -> List[Category]:
-        return [
-            cat for cat in self.records().values()
-            if cat.parent_id == category_id
-        ]
+        return [cat for cat in self.records().values() if cat.parent_id == category_id]
 
     def get_subtree_ids(self, category_id: ID) -> Set[ID]:
         result: Set[ID] = {category_id}

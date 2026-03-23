@@ -110,7 +110,10 @@ class InvestmentBuyTransaction(InvestmentTransaction):
         assert self.fee is not None
         assert self.fee >= 0
         # Either tiny (close to 0) or positive
-        assert isclose(float(abs(self.fee)), 0, abs_tol=ABS_TOLERANCE) or self.fee > ABS_TOLERANCE
+        assert (
+            isclose(float(abs(self.fee)), 0, abs_tol=ABS_TOLERANCE)
+            or self.fee > ABS_TOLERANCE
+        )
         assert self.investment_holding is not None
         assert self.number_of_shares is not None
         assert self.number_of_shares > 0
@@ -162,7 +165,10 @@ class InvestmentSellTransaction(InvestmentTransaction):
         assert self.fee is not None
         assert self.fee >= 0
         # Either tiny (close to 0) or positive
-        assert isclose(float(abs(self.fee)), 0, abs_tol=ABS_TOLERANCE) or self.fee > ABS_TOLERANCE
+        assert (
+            isclose(float(abs(self.fee)), 0, abs_tol=ABS_TOLERANCE)
+            or self.fee > ABS_TOLERANCE
+        )
 
         assert self.investment_holding is not None
         assert self.number_of_shares is not None

@@ -22,9 +22,7 @@ class PayeeManager(RecordManager[Payee]):
                     return payee
         return None
 
-    def search_by_name(
-        self, keyword: str, user_id: Optional[ID] = None
-    ) -> List[Payee]:
+    def search_by_name(self, keyword: str, user_id: Optional[ID] = None) -> List[Payee]:
         keyword_lower = keyword.lower()
         results = []
         for payee in self.records().values():

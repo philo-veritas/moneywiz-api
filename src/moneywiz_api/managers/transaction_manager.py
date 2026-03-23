@@ -116,9 +116,7 @@ class TransactionManager(RecordManager[Transaction]):
     ) -> List[Transaction]:
         all_records = self.records()
         txns = [
-            t
-            for tid, t in all_records.items()
-            if tid not in self.category_assignment
+            t for tid, t in all_records.items() if tid not in self.category_assignment
         ]
         return self._filter(txns, since=since, until=until)
 

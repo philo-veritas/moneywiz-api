@@ -94,9 +94,7 @@ class ShellHelper:
         until: Optional[datetime] = None,
     ) -> pd.DataFrame:
         if include_subcategories:
-            cat_ids = list(
-                self._mw_api.category_manager.get_subtree_ids(category_id)
-            )
+            cat_ids = list(self._mw_api.category_manager.get_subtree_ids(category_id))
         else:
             cat_ids = [category_id]
 

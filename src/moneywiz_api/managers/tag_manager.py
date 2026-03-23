@@ -22,9 +22,7 @@ class TagManager(RecordManager[Tag]):
                     return tag
         return None
 
-    def search_by_name(
-        self, keyword: str, user_id: Optional[ID] = None
-    ) -> List[Tag]:
+    def search_by_name(self, keyword: str, user_id: Optional[ID] = None) -> List[Tag]:
         keyword_lower = keyword.lower()
         results = []
         for tag in self.records().values():

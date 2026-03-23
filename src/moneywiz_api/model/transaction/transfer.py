@@ -87,7 +87,10 @@ class TransferDepositTransaction(Transaction):
         # original_amount could be different with amount ZCURRENCYEXCHANGERATE is playing up
         assert isclose(
             float(self.original_amount),
-            float(-self.sender_amount * self.original_exchange_rate - (self.original_fee or 0)),
+            float(
+                -self.sender_amount * self.original_exchange_rate
+                - (self.original_fee or 0)
+            ),
             abs_tol=ABS_TOLERANCE,
         )
 

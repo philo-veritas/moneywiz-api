@@ -17,10 +17,14 @@ uv add moneywiz-db-api
 ```
 
 ```python
+from pathlib import Path
 from moneywiz_api import MoneywizApi
 
-# 使用默认 macOS MoneyWiz 数据库路径
-with MoneywizApi() as api:
+# macOS 默认数据库路径
+DB_PATH = Path("~/Library/Containers/com.moneywiz.personalfinance"
+               "/Data/Documents/.AppData/ipadMoneyWiz.sqlite").expanduser()
+
+with MoneywizApi(DB_PATH) as api:
     # 获取所有交易
     transactions = api.transaction_manager.get_all()
 
@@ -28,10 +32,10 @@ with MoneywizApi() as api:
     categories = api.category_manager.get_all()
 
     # 查询无分类交易
-    uncategorized = api.transaction_manager.get_uncategorized_transactions()
+    uncategorized = api.transaction_manager.get_uncategorized()
 
-# 或指定数据库路径
-with MoneywizApi("<path_to_your_sqlite_file>") as api:
+# 或指定其他路径
+with MoneywizApi(Path("/path/to/ipadMoneyWiz.sqlite")) as api:
     record = api.accessor.get_record(record_id)
     print(record)
 ```
@@ -47,6 +51,12 @@ moneywiz-cli
 # 指定数据库路径
 moneywiz-cli /path/to/moneywiz.sqlite
 ```
+
+## 文档
+
+完整接口参考（含所有 Manager 方法、数据模型字段、使用示例及 AI Agent 调用指引）：
+
+[docs/api-reference.md](docs/api-reference.md)
 
 ## Contribution
 

@@ -1,4 +1,5 @@
 from moneywiz_api.model.record import Record
+from moneywiz_api.types import CategoryAssignment
 
 from moneywiz_api.model.account import (
     Account,
@@ -33,6 +34,7 @@ from moneywiz_api.model.transaction import (
 
 __all__ = [
     "Record",
+    "CategoryAssignment",
     "Account",
     "InvestmentAccount",
     "CashAccount",

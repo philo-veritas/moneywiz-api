@@ -17,7 +17,7 @@ from moneywiz_api.model.transaction import (
     WithdrawTransaction,
 )
 from moneywiz_api.managers.record_manager import RecordManager
-from moneywiz_api.types import ID
+from moneywiz_api.types import ID, CategoryAssignment
 
 
 class TransactionManager(RecordManager[Transaction]):
@@ -51,6 +51,16 @@ class TransactionManager(RecordManager[Transaction]):
         self.refund_maps: Dict[ID, ID] = db_accessor.get_refund_maps()
         self.tags_map: Dict[ID, ID] = db_accessor.get_tags_map()
         self._build_category_index()
+        self._inject_categories()
+
+    def _inject_categories(self) -> None:
+        """将分类分配数据注入到 Transaction 对象。"""
+        for txn_id, cats in self.category_assignment.items():
+            txn = self._records.get(txn_id)
+            if txn is not None:
+                txn._category_assignments = [
+                    CategoryAssignment(cat_id, amount) for cat_id, amount in cats
+                ]
 
     def _build_category_index(self) -> None:
         self._category_to_transactions.clear()

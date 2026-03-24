@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Optional
 from decimal import Decimal
 
 from moneywiz_api.model.raw_data_handler import RawDataHandler as RDH
@@ -75,9 +75,3 @@ class InvestmentHolding(Record):
 
         assert self._investment_object_type is not None, self.as_dict()
         assert self._cost_basis_of_missing_ob_shares is not None, self.as_dict()
-
-    def as_dict(self) -> Dict[str, Any]:
-        original = super().as_dict()
-        del original["_investment_object_type"]
-        del original["_cost_basis_of_missing_ob_shares"]
-        return original

@@ -81,10 +81,20 @@ class ShellHelper:
 
     def transactions_table(self, account_id: ID) -> pd.DataFrame:
         records = self._mw_api.transaction_manager.get_all_for_account(account_id)
-
-        return pd.DataFrame.from_records(
-            [record.as_dict() for record in records]
-        ).sort_values(by=["datetime"], ascending=False)
+        rows = []
+        for record in records:
+            row = record.as_dict()
+            if record.category_id:
+                chain = self._mw_api.category_manager.get_name_chain(record.category_id)
+                row["category"] = " > ".join(chain)
+            else:
+                row["category"] = ""
+            rows.append(row)
+        if not rows:
+            return pd.DataFrame()
+        return pd.DataFrame.from_records(rows).sort_values(
+            by=["datetime"], ascending=False
+        )
 
     def transactions_by_category_table(
         self,

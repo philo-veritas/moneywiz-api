@@ -304,12 +304,13 @@ transactions = api.transaction_manager.get_by_category(list(subtree))
 |------|------|--------|------|
 | `category_for_transaction` | `(transaction_id: ID) -> List[Tuple[ID, Decimal]] \| None` | `[(分类ID, 金额)]` 或 `None` | 获取交易的分类分配 |
 | `tags_for_transaction` | `(transaction_id: ID) -> List[ID] \| None` | 标签 ID 列表或 `None` | 获取交易的标签 |
-| `original_transaction_for_refund_transaction` | `(transaction_id: ID) -> ID \| None` | 原始交易 ID 或 `None` | 获取退款对应的原交易 |
+| `original_transaction_for_refund_transaction` | `(transaction_id: ID) -> ID \| None` | 原始交易 ID 或 `None` | 获取退款对应的原交易（等价于读取 `RefundTransaction.original_transaction_id`） |
 
 **示例：**
 
 ```python
 from datetime import datetime
+from moneywiz_api.model import RefundTransaction
 
 # 获取所有交易
 all_txns = api.transaction_manager.get_all()
@@ -332,6 +333,10 @@ txns = api.transaction_manager.get_by_category(cat_ids, since=since, until=until
 # 查询某交易的分类
 cats = api.transaction_manager.category_for_transaction(transaction_id=1234)
 # 结果示例: [(50, Decimal("88.00")), (51, Decimal("12.00"))]
+
+# 查询退款对应的原交易 ID
+refunds = [txn for txn in all_txns if isinstance(txn, RefundTransaction)]
+original_txn_id = refunds[0].original_transaction_id if refunds else None
 ```
 
 ---
@@ -471,6 +476,8 @@ investment_accounts = [a for a in accounts if isinstance(a, InvestmentAccount)]
 }
 ```
 
+`RefundTransaction.to_dict()` 还会包含 `original_transaction_id` 字段。
+
 ---
 
 **具体交易子类：**
@@ -493,6 +500,12 @@ investment_accounts = [a for a in accounts if isinstance(a, InvestmentAccount)]
 #### RefundTransaction（退款）ENT: 43
 
 字段同 `DepositTransaction`，`amount` 和 `original_amount` 均为正数。
+
+加载到 `TransactionManager` 后会额外注入以下字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `original_transaction_id` | `Optional[ID]` | 对应原始 `WithdrawTransaction` 的 ID；无映射时为 `None` |
 
 #### TransferDepositTransaction（转入）ENT: 45
 

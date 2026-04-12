@@ -3,8 +3,7 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 from moneywiz_api.managers.transaction_manager import TransactionManager
-from moneywiz_api.model.transaction import TransferBudgetTransaction
-from moneywiz_api.types import CategoryAssignment
+from moneywiz_api.model.transaction import RefundTransaction, TransferBudgetTransaction
 
 
 def _make_txn(id, dt, amount=Decimal("100"), cls=None):
@@ -17,6 +16,18 @@ def _make_txn(id, dt, amount=Decimal("100"), cls=None):
     txn.gid = f"gid-{id}"
     txn.datetime = dt
     txn.amount = amount
+    txn._category_assignments = []
+    return txn
+
+
+def _make_refund_txn(id, dt, amount=Decimal("100")):
+    txn = RefundTransaction.__new__(RefundTransaction)
+    txn.id = id
+    txn.gid = f"gid-{id}"
+    txn.datetime = dt
+    txn.amount = amount
+    txn.account = 1
+    txn.original_transaction_id = None
     txn._category_assignments = []
     return txn
 
@@ -127,3 +138,26 @@ def test_inject_categories_skips_missing_transaction():
     tm.category_assignment = {999: [(10, Decimal("100"))]}
     tm._inject_categories()  # 不应抛异常
     assert t1._category_assignments == []
+
+
+def test_inject_refund_relations_sets_original_transaction_id():
+    refund = _make_refund_txn(1, datetime(2024, 1, 1))
+    tm = _build_manager(refund)
+    tm.refund_maps = {1: 42}
+    tm._inject_refund_relations()
+    assert refund.original_transaction_id == 42
+
+
+def test_inject_refund_relations_leaves_none_for_unmapped_refund():
+    refund = _make_refund_txn(1, datetime(2024, 1, 1))
+    tm = _build_manager(refund)
+    tm.refund_maps = {}
+    tm._inject_refund_relations()
+    assert refund.original_transaction_id is None
+
+
+def test_original_transaction_for_refund_transaction():
+    tm = _build_manager()
+    tm.refund_maps = {1: 42}
+    assert tm.original_transaction_for_refund_transaction(1) == 42
+    assert tm.original_transaction_for_refund_transaction(999) is None

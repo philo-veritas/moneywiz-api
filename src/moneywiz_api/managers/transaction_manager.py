@@ -52,6 +52,7 @@ class TransactionManager(RecordManager[Transaction]):
         self.tags_map: Dict[ID, ID] = db_accessor.get_tags_map()
         self._build_category_index()
         self._inject_categories()
+        self._inject_refund_relations()
 
     def _inject_categories(self) -> None:
         """将分类分配数据注入到 Transaction 对象。"""
@@ -61,6 +62,11 @@ class TransactionManager(RecordManager[Transaction]):
                 txn._category_assignments = [
                     CategoryAssignment(cat_id, amount) for cat_id, amount in cats
                 ]
+
+    def _inject_refund_relations(self) -> None:
+        for txn in self._records.values():
+            if isinstance(txn, RefundTransaction):
+                txn.original_transaction_id = self.refund_maps.get(txn.id)
 
     def _build_category_index(self) -> None:
         self._category_to_transactions.clear()

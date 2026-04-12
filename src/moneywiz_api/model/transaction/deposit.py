@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from math import isclose
 from typing import Optional
@@ -125,6 +125,7 @@ class RefundTransaction(Transaction):
     original_currency: str
     original_amount: Decimal
     original_exchange_rate: Optional[Decimal]
+    original_transaction_id: Optional[ID] = field(default=None, init=False)
 
     def __init__(self, row):
         super().__init__(row)
@@ -137,6 +138,7 @@ class RefundTransaction(Transaction):
         self.original_exchange_rate = RDH.get_nullable_decimal(
             row, "ZORIGINALEXCHANGERATE"
         )
+        self.original_transaction_id = None
 
         # Fixes
         if self.original_exchange_rate == Decimal(0):

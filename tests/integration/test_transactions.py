@@ -80,11 +80,14 @@ def test_all_reconcile_transaction(reconcile_transaction: ReconcileTransaction):
 def test_all_refund_transactions(refund_transaction: RefundTransaction):
     refund_transaction.validate()
 
-    original_transaction_id = (
+    original_transaction_id = refund_transaction.original_transaction_id
+    assert original_transaction_id == (
         transaction_manager.original_transaction_for_refund_transaction(
             refund_transaction.id
         )
     )
+    if original_transaction_id is None:
+        return
     original_transaction = transaction_manager.get(original_transaction_id)
     assert isinstance(original_transaction, WithdrawTransaction)
     assert original_transaction.amount < 0

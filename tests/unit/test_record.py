@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from moneywiz_api.model.record import Record
 

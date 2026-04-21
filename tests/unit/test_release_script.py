@@ -113,6 +113,75 @@ def test_read_and_write_project_version(tmp_path):
     assert str(release.read_project_version(pyproject)) == "0.2.0"
 
 
+def test_parse_github_repo_selector_supports_ssh_origin_url():
+    assert (
+        release.parse_github_repo_selector(
+            "git@github.com:philo-veritas/moneywiz-api.git"
+        )
+        == "philo-veritas/moneywiz-api"
+    )
+
+
+def test_parse_github_repo_selector_supports_ssh_over_443_origin_url():
+    assert (
+        release.parse_github_repo_selector(
+            "ssh://git@ssh.github.com:443/philo-veritas/moneywiz-api.git"
+        )
+        == "philo-veritas/moneywiz-api"
+    )
+
+
+def test_create_release_uses_origin_push_remote(tmp_path):
+    pyproject, uv_lock = _write_release_files(tmp_path, version="0.1.1")
+    runner = FakeRunner(
+        release,
+        {
+            ("git", "remote", "get-url", "--push", "origin"): [
+                (0, "git@github.com:fork-owner/moneywiz-api.git\n", "")
+            ],
+            (
+                "gh",
+                "release",
+                "create",
+                "v0.1.2",
+                "--repo",
+                "fork-owner/moneywiz-api",
+                "--title",
+                "v0.1.2",
+                "--generate-notes",
+                "--verify-tag",
+            ): [(0, "https://github.com/fork-owner/moneywiz-api/releases/tag/v0.1.2\n", "")],
+        },
+    )
+    manager = release.ReleaseManager(
+        root=tmp_path,
+        pyproject_path=pyproject,
+        uv_lock_path=uv_lock,
+        runner=runner,
+        sleep_fn=lambda _: None,
+        which=lambda tool: f"/usr/bin/{tool}",
+    )
+
+    release_url = manager.create_release("v0.1.2")
+
+    assert release_url == "https://github.com/fork-owner/moneywiz-api/releases/tag/v0.1.2"
+    assert runner.commands == [
+        ("git", "remote", "get-url", "--push", "origin"),
+        (
+            "gh",
+            "release",
+            "create",
+            "v0.1.2",
+            "--repo",
+            "fork-owner/moneywiz-api",
+            "--title",
+            "v0.1.2",
+            "--generate-notes",
+            "--verify-tag",
+        ),
+    ]
+
+
 def test_release_patch_runs_expected_commands_in_order(tmp_path):
     pyproject, uv_lock = _write_release_files(tmp_path, version="0.1.1")
     stdout = io.StringIO()
@@ -137,11 +206,16 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
         ("git", "tag", "-a", "v0.1.2", "-m", "v0.1.2"): [(0, "", "")],
         ("git", "push", "origin", "main"): [(0, "", "")],
         ("git", "push", "origin", "v0.1.2"): [(0, "", "")],
+        ("git", "remote", "get-url", "--push", "origin"): [
+            (0, "git@github.com:philo-veritas/moneywiz-api.git\n", "")
+        ],
         (
             "gh",
             "release",
             "create",
             "v0.1.2",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--title",
             "v0.1.2",
             "--generate-notes",
@@ -151,6 +225,8 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
             "gh",
             "run",
             "list",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--workflow",
             release.WORKFLOW_NAME,
             "--event",
@@ -192,7 +268,16 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
                 "",
             ),
         ],
-        ("gh", "run", "watch", "42", "--compact", "--exit-status"): [(0, "", "")],
+        (
+            "gh",
+            "run",
+            "watch",
+            "42",
+            "--repo",
+            "philo-veritas/moneywiz-api",
+            "--compact",
+            "--exit-status",
+        ): [(0, "", "")],
     }
     runner = FakeRunner(release, responses)
     sleeps = []
@@ -227,11 +312,14 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
         ("git", "tag", "-a", "v0.1.2", "-m", "v0.1.2"),
         ("git", "push", "origin", "main"),
         ("git", "push", "origin", "v0.1.2"),
+        ("git", "remote", "get-url", "--push", "origin"),
         (
             "gh",
             "release",
             "create",
             "v0.1.2",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--title",
             "v0.1.2",
             "--generate-notes",
@@ -241,6 +329,8 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
             "gh",
             "run",
             "list",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--workflow",
             release.WORKFLOW_NAME,
             "--event",
@@ -254,6 +344,8 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
             "gh",
             "run",
             "list",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--workflow",
             release.WORKFLOW_NAME,
             "--event",
@@ -263,11 +355,22 @@ def test_release_patch_runs_expected_commands_in_order(tmp_path):
             "-L",
             "20",
         ),
-        ("gh", "run", "watch", "42", "--compact", "--exit-status"),
+        (
+            "gh",
+            "run",
+            "watch",
+            "42",
+            "--repo",
+            "philo-veritas/moneywiz-api",
+            "--compact",
+            "--exit-status",
+        ),
         (
             "gh",
             "run",
             "list",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--workflow",
             release.WORKFLOW_NAME,
             "--event",
@@ -431,10 +534,15 @@ def test_release_restores_version_files_when_checks_fail(tmp_path):
 def test_wait_for_publish_run_raises_on_failed_workflow(tmp_path):
     pyproject, uv_lock = _write_release_files(tmp_path, version="0.1.1")
     responses = {
+        ("git", "remote", "get-url", "--push", "origin"): [
+            (0, "git@github.com:philo-veritas/moneywiz-api.git\n", "")
+        ],
         (
             "gh",
             "run",
             "list",
+            "--repo",
+            "philo-veritas/moneywiz-api",
             "--workflow",
             release.WORKFLOW_NAME,
             "--event",
@@ -474,7 +582,16 @@ def test_wait_for_publish_run_raises_on_failed_workflow(tmp_path):
     with pytest.raises(release.ReleaseError, match="PyPI 发布 workflow 失败"):
         manager.wait_for_publish_run("abc123")
 
-    assert ("gh", "run", "watch", "77", "--compact", "--exit-status") not in runner.commands
+    assert (
+        "gh",
+        "run",
+        "watch",
+        "77",
+        "--repo",
+        "philo-veritas/moneywiz-api",
+        "--compact",
+        "--exit-status",
+    ) not in runner.commands
 
 
 def test_main_returns_non_zero_on_release_error(monkeypatch):

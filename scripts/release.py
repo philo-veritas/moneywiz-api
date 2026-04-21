@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Sequence, TextIO
@@ -28,6 +29,9 @@ PROJECT_SECTION_PATTERN = re.compile(
 )
 VERSION_PATTERN = re.compile(
     r'(?m)^(?P<prefix>\s*version\s*=\s*")(?P<version>\d+\.\d+\.\d+)(?P<suffix>".*)$'
+)
+SCP_REMOTE_PATTERN = re.compile(
+    r"^(?P<user>[^@]+)@(?P<host>[^:]+):(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?/?$"
 )
 
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
@@ -180,6 +184,54 @@ def write_project_version(pyproject_path: Path, version: Version) -> None:
     pyproject_path.write_text(updated_text, encoding="utf-8")
 
 
+def normalize_github_host(host: str) -> str:
+    normalized = host.strip().lower().rstrip(".")
+    if normalized in {"github.com", "www.github.com", "ssh.github.com"}:
+        return "github.com"
+    return normalized
+
+
+def format_github_repo_selector(host: str, owner: str, repo: str) -> str:
+    normalized_host = normalize_github_host(host)
+    repo_name = repo.removesuffix(".git")
+    if not repo_name:
+        raise ReleaseError("Git remote 缺少仓库名")
+    if normalized_host == "github.com":
+        return f"{owner}/{repo_name}"
+    return f"{normalized_host}/{owner}/{repo_name}"
+
+
+def parse_github_repo_selector(
+    remote_url: str, *, remote_label: str = "origin push remote"
+) -> str:
+    normalized = remote_url.strip()
+    if not normalized:
+        raise ReleaseError(f"{remote_label} 为空，无法确定 GitHub 仓库")
+
+    ssh_match = SCP_REMOTE_PATTERN.fullmatch(normalized)
+    if ssh_match is not None:
+        return format_github_repo_selector(
+            ssh_match.group("host"),
+            ssh_match.group("owner"),
+            ssh_match.group("repo"),
+        )
+
+    parsed = urlparse(normalized)
+    if parsed.scheme:
+        if parsed.hostname is None:
+            raise ReleaseError(f"无法解析 {remote_label}: {remote_url}")
+        path_parts = [part for part in parsed.path.split("/") if part]
+        if len(path_parts) < 2:
+            raise ReleaseError(f"无法从 {remote_label} 解析仓库: {remote_url}")
+        return format_github_repo_selector(
+            parsed.hostname,
+            path_parts[-2],
+            path_parts[-1],
+        )
+
+    raise ReleaseError(f"不支持的 {remote_label} 格式: {remote_url}")
+
+
 class ReleaseManager:
     def __init__(
         self,
@@ -201,6 +253,7 @@ class ReleaseManager:
         self.which = which
         self.stdout = stdout
         self.stderr = stderr
+        self._github_repo: str | None = None
 
     def release(self, release_type: str) -> None:
         self.ensure_cli_tools()
@@ -312,13 +365,27 @@ class ReleaseManager:
         for snapshot in snapshots:
             snapshot.restore()
 
+    def get_github_repo(self) -> str:
+        if self._github_repo is None:
+            remote_url = self.run(
+                ("git", "remote", "get-url", "--push", "origin"),
+                capture_output=True,
+            ).stdout.strip()
+            self._github_repo = parse_github_repo_selector(
+                remote_url, remote_label="origin push remote"
+            )
+        return self._github_repo
+
     def create_release(self, tag_name: str) -> str:
+        repo = self.get_github_repo()
         completed = self.run(
             (
                 "gh",
                 "release",
                 "create",
                 tag_name,
+                "--repo",
+                repo,
                 "--title",
                 tag_name,
                 "--generate-notes",
@@ -332,6 +399,7 @@ class ReleaseManager:
         return url[-1]
 
     def wait_for_publish_run(self, head_sha: str) -> ReleaseRun:
+        repo = self.get_github_repo()
         self.log("Waiting for GitHub Actions publish workflow...")
         run: ReleaseRun | None = None
 
@@ -353,6 +421,8 @@ class ReleaseManager:
                     "run",
                     "watch",
                     str(run.database_id),
+                    "--repo",
+                    repo,
                     "--compact",
                     "--exit-status",
                 )
@@ -370,11 +440,14 @@ class ReleaseManager:
         return run
 
     def find_publish_run(self, head_sha: str) -> ReleaseRun | None:
+        repo = self.get_github_repo()
         completed = self.run(
             (
                 "gh",
                 "run",
                 "list",
+                "--repo",
+                repo,
                 "--workflow",
                 WORKFLOW_NAME,
                 "--event",

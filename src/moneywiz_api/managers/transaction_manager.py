@@ -25,7 +25,7 @@ class TransactionManager(RecordManager[Transaction]):
         super().__init__()
         self.category_assignment: Dict[ID, List[Tuple[ID, Decimal]]] = {}
         self.refund_maps: Dict[ID, ID] = {}
-        self.tags_map: Dict[ID, ID] = {}
+        self.tags_map: Dict[ID, List[ID]] = {}
         self._category_to_transactions: Dict[ID, Set[ID]] = {}
 
     @property
@@ -45,11 +45,9 @@ class TransactionManager(RecordManager[Transaction]):
 
     def load(self, db_accessor: DatabaseAccessor) -> None:
         super().load(db_accessor)
-        self.category_assignment: Dict[ID, List[Tuple[ID, Decimal]]] = (
-            db_accessor.get_category_assignment()
-        )
-        self.refund_maps: Dict[ID, ID] = db_accessor.get_refund_maps()
-        self.tags_map: Dict[ID, ID] = db_accessor.get_tags_map()
+        self.category_assignment = db_accessor.get_category_assignment()
+        self.refund_maps = db_accessor.get_refund_maps()
+        self.tags_map = db_accessor.get_tags_map()
         self._build_category_index()
         self._inject_categories()
         self._inject_refund_relations()

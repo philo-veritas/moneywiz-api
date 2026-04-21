@@ -44,10 +44,16 @@ class DatabaseAccessor:
         )
 
     def typename_for(self, ent_id: ENT_ID) -> str:
-        return self._ent_to_typename.get(ent_id)
+        try:
+            return self._ent_to_typename[ent_id]
+        except KeyError as exc:
+            raise KeyError(f"Unknown entity id: {ent_id}") from exc
 
     def ent_for(self, typename: str) -> ENT_ID:
-        return self._typename_to_ent.get(typename)
+        try:
+            return self._typename_to_ent[typename]
+        except KeyError as exc:
+            raise KeyError(f"Unknown entity type: {typename}") from exc
 
     def query_objects(self, typenames: List[str]) -> List[Any]:
         cur = self._con.cursor()

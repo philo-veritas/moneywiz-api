@@ -161,3 +161,10 @@ def test_original_transaction_for_refund_transaction():
     tm.refund_maps = {1: 42}
     assert tm.original_transaction_for_refund_transaction(1) == 42
     assert tm.original_transaction_for_refund_transaction(999) is None
+
+
+def test_tags_for_transaction():
+    tm = _build_manager()
+    tm.tags_map = {1: [7, 8]}
+    assert tm.tags_for_transaction(1) == [7, 8]
+    assert tm.tags_for_transaction(999) is None

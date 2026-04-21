@@ -28,6 +28,8 @@ class CategoryManager(RecordManager[Category]):
 
     def get_name_chain_by_gid(self, category_gid: GID) -> List[str]:
         current = self.get_by_gid(category_gid)
+        if current is None:
+            return []
         return self.get_name_chain(current.id)
 
     def get_categories_for_user(self, user_id: ID) -> List[Category]:

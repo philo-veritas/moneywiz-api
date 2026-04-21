@@ -51,3 +51,8 @@ def test_get_children():
     cm = _build_manager(root, child1, child2, other)
     children = cm.get_children(1)
     assert {c.id for c in children} == {2, 3}
+
+
+def test_get_name_chain_by_gid_returns_empty_when_missing():
+    cm = _build_manager()
+    assert cm.get_name_chain_by_gid("missing-gid") == []

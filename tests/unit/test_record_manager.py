@@ -69,6 +69,18 @@ def test_find_one_returns_none():
     assert result is None
 
 
+def test_get_by_gid_returns_record():
+    c1 = _make_category(1, "A")
+    cm = _build_manager(c1)
+    assert cm.get_by_gid("gid-1") is c1
+
+
+def test_get_by_gid_returns_none_when_missing():
+    c1 = _make_category(1, "A")
+    cm = _build_manager(c1)
+    assert cm.get_by_gid("missing-gid") is None
+
+
 def test_count():
     c1 = _make_category(1, "A")
     c2 = _make_category(2, "B")

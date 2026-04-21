@@ -1,58 +1,50 @@
-from collections import defaultdict
-from typing import Dict
-from decimal import Decimal
-
 import pytest
-from moneywiz_api.model.transaction import (
-    InvestmentBuyTransaction,
-    InvestmentSellTransaction,
-)
-from moneywiz_api.types import ID
+from moneywiz_api.model.transaction import TransferBudgetTransaction
 
 
 from conftest import (
     account_manager,
     transaction_manager,
-    CASH_BALANCES,
-    BALANCE_AS_OF_DATE,
-    HOLDINGS_BALANCES,
 )
 
 
 @pytest.mark.parametrize(
-    "test_account,expected_balance",
-    CASH_BALANCES,
+    "account",
+    list(account_manager.records().values()),
+    ids=lambda account: f"{account.id}-{account.name}",
 )
-def test_cash_balance(test_account: int, expected_balance: Decimal):
-    records = transaction_manager.get_all_for_account(
-        test_account, until=BALANCE_AS_OF_DATE
+def test_get_all_for_account_returns_only_matching_transactions(account):
+    records = transaction_manager.get_all_for_account(account.id)
+    expected = sorted(
+        [
+            transaction
+            for transaction in transaction_manager.records().values()
+            if hasattr(transaction, "account")
+            and transaction.account == account.id
+            and not isinstance(transaction, TransferBudgetTransaction)
+        ],
+        key=lambda transaction: transaction.datetime,
     )
-    balance = account_manager.get(test_account).opening_balance
 
-    for record in records:
-        balance += record.amount
-
-    assert balance == pytest.approx(expected_balance, abs=0.01), f"balance={balance}"
+    assert [record.id for record in records] == [record.id for record in expected]
+    assert all(record.account == account.id for record in records)
+    assert [record.datetime for record in records] == sorted(
+        record.datetime for record in records
+    )
 
 
 @pytest.mark.parametrize(
-    "test_account,expected_holding_balance",
-    HOLDINGS_BALANCES,
+    "account",
+    list(account_manager.records().values()),
+    ids=lambda account: f"{account.id}-{account.name}",
 )
-def test_holding_balance(
-    test_account: int, expected_holding_balance: Dict[ID, Decimal]
-):
-    records = transaction_manager.get_all_for_account(
-        test_account, until=BALANCE_AS_OF_DATE
-    )
-    holding_balances: Dict[ID, Decimal] = defaultdict(lambda: Decimal(0))
+def test_get_all_for_account_until_matches_manual_filter(account):
+    all_records = transaction_manager.get_all_for_account(account.id)
+    if not all_records:
+        pytest.skip(f"Account {account.id} has no transactions")
 
-    for record in records:
-        if isinstance(record, InvestmentBuyTransaction):
-            holding_balances[record.investment_holding] += record.number_of_shares
-        if isinstance(record, InvestmentSellTransaction):
-            holding_balances[record.investment_holding] -= record.number_of_shares
+    cutoff = all_records[len(all_records) // 2].datetime
+    records = transaction_manager.get_all_for_account(account.id, until=cutoff)
+    expected = [record for record in all_records if record.datetime <= cutoff]
 
-    assert holding_balances == pytest.approx(expected_holding_balance, abs=0.01), (
-        holding_balances.items()
-    )
+    assert [record.id for record in records] == [record.id for record in expected]

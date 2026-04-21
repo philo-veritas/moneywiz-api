@@ -20,7 +20,7 @@ class RecordManager(ABC, Generic[T]):
         raise NotImplementedError()
 
     def load(self, db_accessor: DatabaseAccessor) -> None:
-        records = db_accessor.query_objects(self.ents.keys())
+        records = db_accessor.query_objects(list(self.ents))
 
         for record in records:
             typename = db_accessor.typename_for(record["Z_ENT"])
@@ -41,7 +41,10 @@ class RecordManager(ABC, Generic[T]):
         return self._records.get(record_id)
 
     def get_by_gid(self, gid: GID) -> T | None:
-        return self._records.get(self._gid_to_id.get(gid))
+        record_id = self._gid_to_id.get(gid)
+        if record_id is None:
+            return None
+        return self._records.get(record_id)
 
     def get_all(self) -> List[T]:
         """返回所有记录的列表。"""

@@ -47,7 +47,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/p/moneywiz-api
+      url: https://pypi.org/project/moneywiz-db-api/
 
     steps:
     - name: Retrieve release distributions

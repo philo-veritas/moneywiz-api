@@ -18,7 +18,15 @@ uv run pytest tests                  # 全部测试（集成测试需要本机�
 uv run mypy src                      # 类型检查
 uv run moneywiz-cli                  # 交互式 shell（默认读取 macOS MoneyWiz DB）
 uv run moneywiz-cli /path/to/db.sqlite  # 指定 DB 路径
+uv run python scripts/release.py patch  # patch 发版
+uv run python scripts/release.py minor  # minor 发版
+uv run python scripts/release.py major  # major 发版
 ```
+
+## 文档索引
+
+- `docs/api-reference.md`: 完整 API 参考文档，涵盖 Manager、Model、CLI 使用方式
+- `RELEASE.md`: 发版说明，包含 `scripts/release.py` 的标准发版流程和本地兜底发布路径
 
 ## 架构
 
